@@ -322,7 +322,52 @@
   }
 
   // ------------------------------------------------------------------
-  // Custom tooltips (replaces native title bubbles)
+  // Data fetching
+  // ------------------------------------------------------------------
+
+  // GitHub Pages answers with `cache-control: max-age=600`, so a browser can
+  // serve a ten-minute-old JSON payload after a deploy. Appending the build id
+  // (injected by build_site.py) makes every fetch URL unique per build, which
+  // also sidesteps caching in front of Pages (Cloudflare proxy, corporate
+  // proxies, service workers) without needing any CDN configuration.
+  const buildId = (() => {
+    const meta = document.querySelector('meta[name="proposal-build"]');
+    return meta ? meta.getAttribute("content") : "";
+  })();
+
+  function dataUrl(path) {
+    return buildId ? `${path}${path.includes("?") ? "&" : "?"}v=${buildId}` : path;
+  }
+
+  // The dataset is replaced wholesale on each sync, so a page left open across
+  // a deploy would keep showing stale counts. Polling the tiny build file keeps
+  // an open tab honest; the caller decides how loudly to surface it.
+  function watchBuild(onChange, intervalMs = 5 * 60 * 1000) {
+    if (!buildId || !onChange) return () => {};
+    let stopped = false;
+    const check = async () => {
+      if (stopped) return;
+      try {
+        const response = await fetch(`data/build.json?v=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload.build && payload.build !== buildId) onChange(payload);
+      } catch (_) {
+        /* offline: try again on the next tick */
+      }
+    };
+    const timer = setInterval(check, intervalMs);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") check();
+    });
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }
+
+  // ------------------------------------------------------------------
+  // Tooltips
   // ------------------------------------------------------------------
 
   function initTooltips() {
@@ -394,5 +439,8 @@
     createSelect,
     initSearchBox,
     initTooltips,
+    dataUrl,
+    watchBuild,
+    buildId,
   };
 })();

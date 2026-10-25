@@ -63,6 +63,41 @@ def compact(item: dict) -> dict:
     }
 
 
+def compute_build_id() -> str:
+    """Fingerprint the published dataset, ignoring volatile timestamps.
+
+    Derived from content only: an unchanged sync keeps the same id, so CDN and
+    browser caches stay warm, while any real data change produces a new id.
+    """
+    digest = hashlib.sha1()
+    for name in ("index.json", "featured.json", "stats.json"):
+        payload = json.loads((SITE_DIR / "data" / name).read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            payload.pop("generatedAt", None)
+        digest.update(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        )
+    return digest.hexdigest()[:10]
+
+
+def inject_build_id(build_id: str) -> int:
+    """Expose the build id to the page so scripts can version their fetches."""
+    tag = f'<meta name="proposal-build" content="{build_id}" />'
+    changed = 0
+    for page in ("index.html", "detail.html", "about.html", "404.html"):
+        path = SITE_DIR / page
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        text = re.sub(r'\s*<meta name="proposal-build"[^>]*>', "", text)
+        if "</head>" not in text:
+            continue
+        text = text.replace("</head>", f"  {tag}\n</head>", 1)
+        path.write_text(text, encoding="utf-8")
+        changed += 1
+    return changed
+
+
 def stamp_assets() -> int:
     """Append a content hash to local asset URLs.
 
@@ -203,10 +238,17 @@ def main() -> int:
     )
 
     stamped = stamp_assets()
+    build_id = compute_build_id()
+    (SITE_DIR / "data" / "build.json").write_text(
+        json.dumps({"build": build_id, "generatedAt": stats["generatedAt"]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    injected = inject_build_id(build_id)
 
     print(
         f"[build] index={len(index)} details={len(list(DETAIL_DIR.glob('*.json')))} "
-        f"translated={stats['translated']}/{len(proposals)} stamped_pages={stamped}",
+        f"translated={stats['translated']}/{len(proposals)} stamped_pages={stamped} "
+        f"build={build_id} injected={injected}",
         flush=True,
     )
     return 0

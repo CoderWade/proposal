@@ -75,6 +75,22 @@ def main() -> int:
     if stats.get("counts", {}).get("total") != len(index):
         fail("stats total does not match index")
 
+    build_path = DATA / "build.json"
+    if not build_path.is_file():
+        fail("missing data/build.json")
+    build = json.loads(build_path.read_text(encoding="utf-8"))
+    if not build.get("build"):
+        fail("build.json has no build id")
+
+    # Every page must carry the build id, otherwise the client cannot version
+    # its data requests and a CDN could pair fresh HTML with stale JSON.
+    for page in REQUIRED_PAGES:
+        html = (SITE / page).read_text(encoding="utf-8")
+        if f'content="{build["build"]}"' not in html:
+            fail(f"{page} does not carry build id {build['build']}")
+        if "assets/ui.js?v=" not in html:
+            fail(f"{page} has unversioned asset references")
+
     translated = sum(1 for row in index if row.get("zhAvailable"))
     ratio = translated / max(1, len(index))
     print(f"[check] {len(index)} proposals, {translated} translated ({ratio:.1%})")

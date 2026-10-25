@@ -185,7 +185,9 @@
     const ids = item.related || [];
     if (!ids.length) return;
     try {
-      const index = await fetch("data/index.json", { cache: "no-cache" }).then((r) => r.json());
+      const index = await fetch(UI.dataUrl("data/index.json"), { cache: "no-cache" }).then((r) =>
+        r.json()
+      );
       const byId = new Map(index.map((entry) => [entry.id, entry]));
       const rows = ids
         .map((id) => byId.get(id))
@@ -206,7 +208,9 @@
 
   async function loadMeta() {
     try {
-      const stats = await fetch("data/stats.json", { cache: "no-cache" }).then((r) => r.json());
+      const stats = await fetch(UI.dataUrl("data/stats.json"), { cache: "no-cache" }).then((r) =>
+        r.json()
+      );
       if (stats.generatedAt) {
         $("#updatedAt").textContent = `数据生成于 ${new Date(stats.generatedAt).toLocaleString(
           "zh-CN",
@@ -250,7 +254,9 @@
     }
 
     try {
-      const response = await fetch(`data/detail/${id.toLowerCase()}.json`, { cache: "no-cache" });
+      const response = await fetch(UI.dataUrl(`data/detail/${id.toLowerCase()}.json`), {
+        cache: "no-cache",
+      });
       if (!response.ok) throw new Error(response.status);
       const item = await response.json();
 

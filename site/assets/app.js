@@ -484,13 +484,27 @@
 
   async function loadJSON(path, fallback) {
     try {
-      const response = await fetch(path, { cache: "no-cache" });
+      const response = await fetch(UI.dataUrl(path), { cache: "no-cache" });
       if (!response.ok) throw new Error(response.status);
       return await response.json();
     } catch (error) {
       console.warn("load failed", path, error);
       return fallback;
     }
+  }
+
+  function showUpdateBanner() {
+    if (document.querySelector(".update-banner")) return;
+    const bar = document.createElement("div");
+    bar.className = "update-banner";
+    bar.setAttribute("role", "status");
+    bar.innerHTML = `
+      <span>数据已更新到新版本。</span>
+      <button type="button" class="update-banner-btn">立即刷新</button>
+      <button type="button" class="update-banner-dismiss" aria-label="暂不刷新">×</button>`;
+    document.body.appendChild(bar);
+    bar.querySelector(".update-banner-btn").addEventListener("click", () => location.reload());
+    bar.querySelector(".update-banner-dismiss").addEventListener("click", () => bar.remove());
   }
 
   async function init() {
@@ -540,6 +554,8 @@
     buildFilterOptions();
     applyFilters();
     if (!featuredRendered) $("#featuredSection").hidden = true;
+
+    UI.watchBuild(showUpdateBanner);
   }
 
   init();

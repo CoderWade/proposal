@@ -84,13 +84,38 @@ python3 scripts/build_site.py          # → site/data/*.json
 
    | 类型 | 名称 | 内容 | 代理状态 |
    | --- | --- | --- | --- |
-   | CNAME | `proposal` | `coderwade.github.io` | **DNS only（灰云）** |
-
-   必须关闭橙云代理：GitHub Pages 需要用 CNAME 记录做域名验证并自动签发 Let's Encrypt 证书，开代理会卡在证书验证或产生重定向循环。
+   | CNAME | `proposal` | `coderwade.github.io` | 二选一，见下节 |
 
 4. 发布完成后 Actions 里的 `deploy` job 会输出 `page_url`，首次生效通常需要 1–10 分钟传播。
 
 页面内所有资源都使用相对路径，因此无论部署在根域名、`/proposal/` 子路径还是自定义域名下都能正常工作。
+
+### 灰云 vs 橙云（Cloudflare 代理）
+
+两种模式站点都能正常访问，差别只在于缓存与证书由谁负责。
+
+| | 灰云（DNS only） | 橙云（Proxied） |
+| --- | --- | --- |
+| HTTPS 证书 | GitHub 用 Let's Encrypt 直接签发 | Cloudflare Universal SSL 提供，需把 SSL 模式设为 **Full (strict)** |
+| 边缘缓存 | 无 | 会缓存 JS/CSS；HTML/JSON 默认不缓存 |
+| 生效速度 | 部署即生效 | 资源已指纹化，部署即生效 |
+| 额外能力 | — | WAF、限速、DDoS 防护、隐藏源站 IP |
+
+**关于缓存刷新。** GitHub Pages 给所有文件都发 `cache-control: max-age=600`，Cloudflare 默认遵守源站这个头，且按扩展名决定缓存对象（JS/CSS 在默认列表里，**HTML 和 JSON 不在**）。所以橙云下可能出现的最坏情况是浏览器或边缘持有 10 分钟前的副本。仓库里已经用三层机制消除这个问题，与 CDN 配置无关：
+
+1. **资源指纹**：构建时给 `assets/*` 追加内容哈希（`app.js?v=421c3c6e`），文件一变 URL 就变，任何缓存层都不可能返回旧 JS/CSS。
+2. **数据版本**：`data/build.json` 记录本次构建 ID，并由构建注入每个页面的 `<meta name="proposal-build">`；所有 JSON 请求都带 `?v=<build-id>`。即使 HTML 本身是 10 分钟前的旧副本，它引用的也是与之匹配的旧数据，**永远是自洽的旧快照，不会出现新页面配旧数据**。
+3. **更新提示**：页面每 5 分钟以及切回标签页时探测 `data/build.json`，发现新构建就弹出「数据已更新到新版本 · 立即刷新」，不打断阅读。
+
+**仓库代码做不到的事。** GitHub Pages 不支持 `_headers` 配置文件，所以无法从仓库里给 HTML 强制 `Cache-Control: no-cache`；`<meta http-equiv="cache-control">` 对现代浏览器的 HTTP 缓存无效。若要求 HTML 零延迟更新，需要在 Cloudflare 加一条 Cache Rule（控制台配置，不是代码）：
+
+```
+匹配：proposal.timeminer.cc/*.html（或 contains ".html"）
+Edge TTL：Bypass cache
+Browser TTL：Respect origin / 0
+```
+
+**橙云的注意点。** GitHub Pages 会定期做自定义域名的 DNS 校验来续期证书。开启橙云后域名解析到 Cloudflare IP，Pages 设置页可能出现 DNS 检查警告，极端情况下会影响 GitHub 侧证书续期——此时 Cloudflare 边缘证书仍然生效，站点不会中断。如果看到警告，把 SSL/TLS 模式确认为 **Full (strict)**（GitHub 已签发 `CN=proposal.timeminer.cc`），必要时临时切回灰云让 GitHub 完成续期。
 
 `validate.yml` 会在 PR 上跑一次无网络的解析 + 构建 + 自检，保证流水线不会因为格式变化而静默失败。
 
