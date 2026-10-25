@@ -167,7 +167,6 @@ def main() -> int:
             if overlap:
                 related.append((overlap, other["requiredByCount"], other["number"], other["id"]))
         related.sort(reverse=True)
-        related_ids = [row[3] for row in related[:6]]
 
         detail = dict(item)
         detail["sections"] = {
@@ -175,7 +174,18 @@ def main() -> int:
             for name, value in item.get("sections", {}).items()
             if value.get("en") or value.get("zh")
         }
-        detail["related"] = related_ids
+        # Embed just enough of each related proposal to render its card. The
+        # detail page used to fetch the full 1.1 MB index.json for this, which
+        # landed after the detail payload and left the page blank for ~400 ms.
+        detail["related"] = [
+            {
+                "id": row[3],
+                "titleZh": by_id[row[3]].get("titleZh", ""),
+                "title": by_id[row[3]]["title"],
+                "statusZh": by_id[row[3]].get("statusZh", ""),
+            }
+            for row in related[:6]
+        ]
         detail["requiresDetail"] = [
             {
                 "id": link["id"],

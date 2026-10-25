@@ -181,34 +181,26 @@
     $("#impactText").textContent = item.impactZh || "暂无评估。";
   }
 
-  async function renderRelated(item) {
-    const ids = item.related || [];
-    if (!ids.length) return;
-    try {
-      const index = await fetch(UI.dataUrl("data/index.json"), { cache: "no-cache" }).then((r) =>
-        r.json()
-      );
-      const byId = new Map(index.map((entry) => [entry.id, entry]));
-      const rows = ids
-        .map((id) => byId.get(id))
-        .filter(Boolean)
-        .map(
-          (rel) => `
+  function renderRelated(item) {
+    const related = item.related || [];
+    if (!related.length) return;
+    const rows = related
+      .map(
+        (rel) => `
           <a class="related-item" href="detail.html?id=${encodeURIComponent(rel.id)}">
             <div class="ri-id">${esc(rel.id)} · ${esc(rel.statusZh)}</div>
             <div class="ri-title">${esc(rel.titleZh || rel.title)}</div>
           </a>`
-        )
-        .join("");
-      if (!rows) return;
-      $("#relatedGrid").innerHTML = rows;
-      $("#relatedSection").hidden = false;
-    } catch (_) {}
+      )
+      .join("");
+    if (!rows) return;
+    $("#relatedGrid").innerHTML = rows;
+    $("#relatedSection").hidden = false;
   }
 
   async function loadMeta() {
     try {
-      const stats = await fetch(UI.dataUrl("data/stats.json"), { cache: "no-cache" }).then((r) =>
+      const stats = await fetch(UI.dataUrl("data/stats.json"), { cache: "default" }).then((r) =>
         r.json()
       );
       if (stats.generatedAt) {
@@ -223,6 +215,7 @@
   function bindChrome() {
     UI.bindThemeToggle($("#themeToggle"));
     UI.initTooltips();
+    UI.initIntentPrefetch();
     UI.initSearchBox($(".topbar-search"), () => {});
 
     $("#search").addEventListener("keydown", (event) => {
@@ -255,7 +248,8 @@
 
     try {
       const response = await fetch(UI.dataUrl(`data/detail/${id.toLowerCase()}.json`), {
-        cache: "no-cache",
+        // The URL carries the build id, so a cached response can never be stale.
+        cache: "default",
       });
       if (!response.ok) throw new Error(response.status);
       const item = await response.json();
@@ -271,7 +265,7 @@
       renderMeta(item);
       renderSections(item);
       renderAside(item);
-      await renderRelated(item);
+      renderRelated(item);
 
       $("#loading").hidden = true;
       $("#detailWrap").hidden = false;

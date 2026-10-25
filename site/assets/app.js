@@ -484,7 +484,8 @@
 
   async function loadJSON(path, fallback) {
     try {
-      const response = await fetch(UI.dataUrl(path), { cache: "no-cache" });
+      // Versioned URL, so using the HTTP cache is safe and makes revisits free.
+      const response = await fetch(UI.dataUrl(path), { cache: "default" });
       if (!response.ok) throw new Error(response.status);
       return await response.json();
     } catch (error) {
@@ -510,6 +511,7 @@
   async function init() {
     UI.initTheme();
     UI.initTooltips();
+    UI.initIntentPrefetch();
     UI.bindThemeToggle($("#themeToggle"));
     readURL();
 

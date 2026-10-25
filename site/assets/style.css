@@ -136,6 +136,61 @@ button { cursor: pointer; }
 .muted { color: var(--muted); }
 
 /* ==========================================================================
+   Navigation transitions (multi-page app)
+
+   Same-origin navigations cross-fade instead of flashing an empty canvas
+   between documents. The at-rule must be present in both the outgoing and the
+   incoming document — since every page loads this stylesheet, adding it here
+   covers both directions. No JavaScript involved.
+   ========================================================================== */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 0.22s;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+::view-transition-old(root) {
+  animation: 0.15s ease-out both vt-fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 0.24s cubic-bezier(0.22, 0.61, 0.36, 1) both vt-fade-in;
+}
+
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Detail content fading in once the payload lands, so a slow lookup reads as
+   "appearing" rather than "flashing". */
+#detailWrap:not([hidden]) {
+  animation: contentIn 0.18s ease-out both;
+}
+@keyframes contentIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  #detailWrap:not([hidden]) {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
    Top bar
    ========================================================================== */
 

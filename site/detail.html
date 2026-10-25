@@ -2,6 +2,18 @@
 <html lang="zh-CN" data-theme="dark">
 <head>
   <meta charset="utf-8" />
+  <!-- Theme must be resolved before first paint: an inline, render-blocking
+       script in <head> prevents a flash of the default dark theme for
+       visitors who chose light. Keep it tiny and synchronous. -->
+  <script>
+    try {
+      var saved = localStorage.getItem("proposal-theme");
+      if (saved === "light" || saved === "dark") {
+        document.documentElement.dataset.theme = saved;
+      }
+    } catch (e) {}
+  </script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>提案详情 · 链上提案库</title>
   <meta name="description" content="EIP/ERC/BIP 提案中文详情：摘要、动机、技术规范要点、影响评估与依赖关系。" />
@@ -11,7 +23,7 @@
   <meta name="theme-color" content="#0a0c11" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
   <link rel="icon" href="assets/favicon.svg?v=c901e3aa" type="image/svg+xml" />
-  <link rel="stylesheet" href="assets/style.css?v=d4ff15d9" />
+  <link rel="stylesheet" href="assets/style.css?v=a68522d8" />
   <meta name="proposal-build" content="c7f5bdf502" />
 </head>
 <body>
@@ -136,7 +148,7 @@
     </div>
   </footer>
 
-  <script src="assets/ui.js?v=13982f63"></script>
-  <script src="assets/detail.js?v=62b03621"></script>
+  <script src="assets/ui.js?v=90c96944"></script>
+  <script src="assets/detail.js?v=2fc8f6f5"></script>
 </body>
 </html>

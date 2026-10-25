@@ -367,6 +367,58 @@
   }
 
   // ------------------------------------------------------------------
+  // Intent prefetch
+  // ------------------------------------------------------------------
+
+  // Cards and "back to list" links are the only navigation targets. Fetching
+  // the destination document plus its JSON on hover/focus hides the network
+  // round trip behind the click, so the transition animation covers the parse
+  // instead of the visitor staring at a loading placeholder.
+  function initIntentPrefetch() {
+    const started = new Set();
+
+    const warm = (href) => {
+      let url;
+      try {
+        url = new URL(href, location.href);
+      } catch (_) {
+        return;
+      }
+      if (url.origin !== location.origin) return;
+
+      const jobs = [url.href];
+      const params = new URLSearchParams(url.search);
+      const id = (params.get("id") || "").trim().toLowerCase();
+      if (url.pathname.endsWith("/detail.html") && id) {
+        jobs.push(dataUrl(`data/detail/${id}.json`));
+      }
+      if (url.pathname.endsWith("/index.html") || url.pathname.endsWith("/")) {
+        jobs.push(dataUrl("data/index.json"));
+      }
+
+      for (const job of jobs) {
+        if (started.has(job)) continue;
+        started.add(job);
+        // Versioned URLs make force-cache safe: a hit is always the right build.
+        fetch(job, { cache: "force-cache", priority: "low" }).catch(() => {});
+      }
+    };
+
+    const onIntent = (event) => {
+      const link = event.target.closest?.("a[href]");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("mailto:")) return;
+      if (/^https?:\/\//i.test(href) && !href.startsWith(location.origin)) return;
+      warm(href);
+    };
+
+    document.addEventListener("pointerover", onIntent, { passive: true });
+    document.addEventListener("focusin", onIntent);
+    document.addEventListener("touchstart", onIntent, { passive: true });
+  }
+
+  // ------------------------------------------------------------------
   // Tooltips
   // ------------------------------------------------------------------
 
@@ -439,6 +491,7 @@
     createSelect,
     initSearchBox,
     initTooltips,
+    initIntentPrefetch,
     dataUrl,
     watchBuild,
     buildId,

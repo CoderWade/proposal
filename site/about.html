@@ -2,6 +2,18 @@
 <html lang="zh-CN" data-theme="dark">
 <head>
   <meta charset="utf-8" />
+  <!-- Theme must be resolved before first paint: an inline, render-blocking
+       script in <head> prevents a flash of the default dark theme for
+       visitors who chose light. Keep it tiny and synchronous. -->
+  <script>
+    try {
+      var saved = localStorage.getItem("proposal-theme");
+      if (saved === "light" || saved === "dark") {
+        document.documentElement.dataset.theme = saved;
+      }
+    } catch (e) {}
+  </script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>关于本站 · 链上提案库</title>
   <meta name="description" content="链上提案库的数据来源、抓取方式、翻译方法与影响面评估口径说明。" />
@@ -12,7 +24,7 @@
   <meta name="theme-color" content="#0a0c11" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
   <link rel="icon" href="assets/favicon.svg?v=c901e3aa" type="image/svg+xml" />
-  <link rel="stylesheet" href="assets/style.css?v=d4ff15d9" />
+  <link rel="stylesheet" href="assets/style.css?v=a68522d8" />
   <meta name="proposal-build" content="c7f5bdf502" />
 </head>
 <body>
@@ -129,12 +141,13 @@
     </div>
   </footer>
 
-  <script src="assets/ui.js?v=13982f63"></script>
+  <script src="assets/ui.js?v=90c96944"></script>
   <script>
     (() => {
       const UI = window.UI;
       UI.initTheme();
       UI.initTooltips();
+      UI.initIntentPrefetch();
       UI.bindThemeToggle(document.getElementById("themeToggle"));
       UI.initSearchBox(document.querySelector(".topbar-search"), () => {});
       document.getElementById("search").addEventListener("keydown", (event) => {
