@@ -64,23 +64,29 @@ python3 scripts/build_site.py          # → site/data/*.json
 
 ## GitHub Pages 部署
 
+站点地址：**https://proposal.timeminer.cc**（仓库 `CoderWade/proposal`，默认分支 `master`）
+
 仓库已包含 `.github/workflows/deploy.yml`：
 
 1. `schedule: "0 */6 * * *"` 每 6 小时运行一次；也支持 `workflow_dispatch`（可勾选 `full_refresh` 清空翻译缓存）。
-2. 运行 `scripts/pipeline.py --refresh`，然后提交 `data/` 与 `site/data/` 的变更。
-3. 通过 `actions/deploy-pages` 发布 `site/` 目录。
+2. 运行 `scripts/pipeline.py --refresh`，自检通过后提交 `data/cache` 的增量翻译缓存。
+3. 通过 `actions/deploy-pages` 发布 `site/` 目录（含 `site/CNAME`）。
 
-启用步骤：
+### 首次启用（需要仓库管理员权限）
 
-```bash
-git init && git add . && git commit -m "feat: proposal zh index"
-git branch -M main
-git remote add origin git@github.com:<你的账号>/<仓库名>.git
-git push -u origin main
-```
+1. **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
+2. **Settings → Pages → Custom domain** 填入 `proposal.timeminer.cc` 并 Save，等 DNS 检查通过后勾选 **Enforce HTTPS**。
+3. 在 Cloudflare 添加 DNS 记录（该域名的 NS 是 `diana.ns.cloudflare.com` / `kianchau.ns.cloudflare.com`）：
 
-然后在 GitHub 仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
-如果站点部署在子路径（`https://<user>.github.io/<repo>/`），页面里全部使用相对路径，无需额外配置。
+   | 类型 | 名称 | 内容 | 代理状态 |
+   | --- | --- | --- | --- |
+   | CNAME | `proposal` | `coderwade.github.io` | **DNS only（灰云）** |
+
+   必须关闭橙云代理：GitHub Pages 需要用 CNAME 记录做域名验证并自动签发 Let's Encrypt 证书，开代理会卡在证书验证或产生重定向循环。
+
+4. 发布完成后 Actions 里的 `deploy` job 会输出 `page_url`，首次生效通常需要 1–10 分钟传播。
+
+页面内所有资源都使用相对路径，因此无论部署在根域名、`/proposal/` 子路径还是自定义域名下都能正常工作。
 
 `validate.yml` 会在 PR 上跑一次无网络的解析 + 构建 + 自检，保证流水线不会因为格式变化而静默失败。
 
