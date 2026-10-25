@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>链上提案库 · EIP / ERC / BIP 中文索引</title>
+  <meta name="description" content="以太坊 EIP/ERC 与比特币 BIP 提案的中文索引：提案内容、状态、分类、依赖关系与影响评估，数据自动同步自官方仓库。" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html" aria-label="链上提案库首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="26" height="26"><path d="M16 2 5 17l11 6 11-6L16 2Z" fill="currentColor" opacity=".9"/><path d="M5 19.2 16 26l11-6.8L16 30 5 19.2Z" fill="currentColor" opacity=".55"/></svg>
+        </span>
+        <span class="brand-text">
+          <strong>链上提案库</strong>
+          <small>EIP · ERC · BIP</small>
+        </span>
+      </a>
+
+      <div class="topbar-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm0-2a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Zm9.6 5.1-4.3-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="search" type="search" placeholder="搜索编号、标题或关键词，例如 7702、账户抽象、Taproot" autocomplete="off" spellcheck="false" aria-label="搜索提案" />
+        <kbd>/</kbd>
+      </div>
+
+      <nav class="topbar-actions">
+        <a class="ghost-btn" href="#overview">数据概览</a>
+        <a class="ghost-btn" href="about.html">关于</a>
+        <button id="themeToggle" class="icon-btn" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.3A8.2 8.2 0 0 1 9.7 4a8.3 8.3 0 1 0 10.3 10.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <p class="eyebrow"><span class="pulse"></span> 自动同步官方仓库 · 中文机器翻译</p>
+        <h1>读懂以太坊与比特币的<br /><em>每一次协议演进</em></h1>
+        <p class="hero-sub">
+          收录 Ethereum <strong>EIP</strong>、应用层 <strong>ERC</strong> 与 Bitcoin <strong>BIP</strong> 提案，
+          提供中文标题、摘要、状态、分类、依赖关系与影响面评估。数据每 6 小时从官方仓库自动抓取。
+        </p>
+        <div class="hero-stats" id="heroStats" aria-live="polite">
+          <div class="stat"><span class="stat-num" data-stat="total">—</span><span class="stat-label">提案总数</span></div>
+          <div class="stat"><span class="stat-num" data-stat="EIP">—</span><span class="stat-label">EIP</span></div>
+          <div class="stat"><span class="stat-num" data-stat="ERC">—</span><span class="stat-label">ERC</span></div>
+          <div class="stat"><span class="stat-num" data-stat="BIP">—</span><span class="stat-label">BIP</span></div>
+          <div class="stat"><span class="stat-num" data-stat="translated">—</span><span class="stat-label">已中文化</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="featured" id="featuredSection" hidden>
+      <div class="section-head">
+        <h2>里程碑提案</h2>
+        <p>改变过链上世界运行方式的 12 个标准</p>
+      </div>
+      <div class="featured-grid" id="featuredGrid"></div>
+    </section>
+
+    <section class="explorer" id="explorer">
+      <aside class="filters" aria-label="筛选条件">
+        <div class="filter-block">
+          <h3>提案家族</h3>
+          <div class="segmented" id="familyFilter" role="group" aria-label="按提案家族筛选">
+            <button class="seg active" data-family="all" type="button">全部 <span>—</span></button>
+            <button class="seg" data-family="EIP" type="button">EIP <span>—</span></button>
+            <button class="seg" data-family="ERC" type="button">ERC <span>—</span></button>
+            <button class="seg" data-family="BIP" type="button">BIP <span>—</span></button>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <h3>状态</h3>
+          <select id="statusFilter" aria-label="按状态筛选"><option value="">全部状态</option></select>
+        </div>
+
+        <div class="filter-block">
+          <h3>类型 / 层</h3>
+          <select id="typeFilter" aria-label="按类型筛选"><option value="">全部类型</option></select>
+        </div>
+
+        <div class="filter-block">
+          <h3>影响面</h3>
+          <div class="chip-row" id="impactFilter" role="group" aria-label="按影响面筛选">
+            <button class="chip" data-impact="高" type="button">高</button>
+            <button class="chip" data-impact="中" type="button">中</button>
+            <button class="chip" data-impact="低" type="button">低</button>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <h3>主题标签</h3>
+          <div class="chip-row tag-cloud" id="tagFilter"></div>
+        </div>
+
+        <button class="reset-btn" id="resetFilters" type="button">清空全部筛选</button>
+      </aside>
+
+      <div class="results">
+        <div class="results-toolbar">
+          <div class="results-count">
+            <strong id="resultCount">—</strong> 个提案
+            <span id="activeFilters" class="active-filters"></span>
+          </div>
+          <label class="sort-control">
+            排序
+            <select id="sortSelect" aria-label="排序方式">
+              <option value="number-asc">编号升序</option>
+              <option value="number-desc">编号降序</option>
+              <option value="newest">最新创建</option>
+              <option value="impact">影响面优先</option>
+              <option value="refs">被引用最多</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="cardGrid" class="card-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty-state" hidden>
+          <div class="empty-icon">∅</div>
+          <h3>没有匹配的提案</h3>
+          <p>试试更短的关键词，或清空筛选条件。</p>
+          <button class="primary-btn" id="emptyReset" type="button">清空筛选</button>
+        </div>
+        <div class="load-more-wrap">
+          <button class="primary-btn" id="loadMore" type="button" hidden>加载更多</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="overview" id="overview">
+      <div class="section-head">
+        <h2>数据概览</h2>
+        <p>点选任意条目即可回到上方筛选结果</p>
+      </div>
+      <div class="overview-grid">
+        <div class="panel">
+          <h3>状态分布</h3>
+          <div class="bar-list" id="statusChart"></div>
+        </div>
+        <div class="panel">
+          <h3>类型分布</h3>
+          <div class="bar-list" id="typeChart"></div>
+        </div>
+        <div class="panel">
+          <h3>主题热度</h3>
+          <div class="bar-list" id="tagChart"></div>
+        </div>
+        <div class="panel">
+          <h3>历年提案数量</h3>
+          <div class="year-chart" id="yearChart"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>链上提案库</strong>
+        <p>非官方中文索引。提案原文版权归各作者所有，EIP/ERC 采用 CC0，BIP 采用各自声明许可证。</p>
+        <p class="muted">机器翻译仅供阅读理解，技术细节以英文原文为准。</p>
+      </div>
+      <div class="footer-meta">
+        <p>数据源</p>
+        <a href="https://github.com/ethereum/EIPs" target="_blank" rel="noopener">ethereum/EIPs ↗</a>
+        <a href="https://github.com/ethereum/ERCs" target="_blank" rel="noopener">ethereum/ERCs ↗</a>
+        <a href="https://github.com/bitcoin/bips" target="_blank" rel="noopener">bitcoin/bips ↗</a>
+      </div>
+      <div class="footer-meta">
+        <p>更新信息</p>
+        <span id="updatedAt">—</span>
+        <a href="about.html">数据与方法说明 ↗</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

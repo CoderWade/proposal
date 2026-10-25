@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>关于本站 · 链上提案库</title>
+  <meta name="description" content="链上提案库的数据来源、抓取方式、翻译方法与影响面评估口径说明。" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html" aria-label="链上提案库首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="26" height="26"><path d="M16 2 5 17l11 6 11-6L16 2Z" fill="currentColor" opacity=".9"/><path d="M5 19.2 16 26l11-6.8L16 30 5 19.2Z" fill="currentColor" opacity=".55"/></svg>
+        </span>
+        <span class="brand-text">
+          <strong>链上提案库</strong>
+          <small>EIP · ERC · BIP</small>
+        </span>
+      </a>
+      <div class="topbar-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm0-2a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Zm9.6 5.1-4.3-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="search" type="search" placeholder="搜索提案编号或关键词" autocomplete="off" spellcheck="false" aria-label="搜索提案" />
+        <kbd>/</kbd>
+      </div>
+      <nav class="topbar-actions">
+        <a class="ghost-btn" href="index.html">返回列表</a>
+        <button id="themeToggle" class="icon-btn" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.3A8.2 8.2 0 0 1 9.7 4a8.3 8.3 0 1 0 10.3 10.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="about-wrap">
+    <h1>关于链上提案库</h1>
+    <p class="lede">
+      把散落在 GitHub 仓库里的 EIP、ERC、BIP 提案整理成一份能检索、能分类、能看影响面的中文索引。
+      所有内容来自官方仓库的原始 Markdown / MediaWiki 文件，站点是纯静态页面，不依赖任何后端服务。
+    </p>
+
+    <h2>数据从哪来</h2>
+    <ul>
+      <li><strong>EIP</strong>：<code>ethereum/EIPs</code> 仓库 <code>EIPS/eip-*.md</code></li>
+      <li><strong>ERC</strong>：<code>ethereum/ERCs</code> 仓库 <code>ERCS/erc-*.md</code>（应用层标准已从 EIP 仓库迁出，本站合并展示）</li>
+      <li><strong>BIP</strong>：<code>bitcoin/bips</code> 仓库 <code>bip-*.mediawiki</code> 与 <code>bip-*.md</code></li>
+    </ul>
+    <p>
+      抓取走 <code>codeload.github.com</code> 的仓库压缩包，一次拉全量文件，比逐个调用 API 更稳且不受接口限流影响；
+      同时用 GitHub API 记录每个仓库最新的 commit 作为数据版本锚点。
+    </p>
+
+    <h2>多久更新一次</h2>
+    <p>
+      GitHub Actions 每 6 小时触发一次 <code>scripts/pipeline.py</code>：下载官方仓库 → 解析元数据 → 翻译 → 生成静态页面 → 提交并发布。
+      也可以手动在 Actions 页面点 <code>Run workflow</code> 立即同步。
+    </p>
+
+    <h2>中文是怎么来的</h2>
+    <p>
+      标题、描述与摘要/动机/设计理由/向后兼容性/安全考量五个章节通过 Google Translate 公共接口做机器翻译，
+      结果按源文本哈希缓存在 <code>data/cache/translations.json</code>。缓存命中时不会重复请求，因此定时任务的开销主要集中在新提案上。
+      详情页提供「中文 / EN」切换，可随时对照原文。
+    </p>
+    <p class="notice">
+      机器翻译只适合快速理解。涉及 gas 计算、字节布局、密码学参数、共识规则的部分，请以详情页右侧的「查看官方原文」链接为准。
+    </p>
+
+    <h2>影响面评估的口径</h2>
+    <p>「影响 高 / 中 / 低」是本站基于可计算信号给出的启发式判断，不是官方评级。打分因子包括：</p>
+    <ul>
+      <li>状态是否已定稿或已部署（Final / Deployed / Living / Complete）</li>
+      <li>是否触及核心协议或共识层（Core、Consensus soft/hard fork）</li>
+      <li>被其他提案引用的次数（依赖图中的入度）</li>
+      <li>提案类型（Standards Track / Specification 权重更高）</li>
+    </ul>
+    <p>
+      站内同时展示「依赖的前置提案」与「被引用次数」，你可以直接沿着依赖图判断一个提案在协议演进中的位置，
+      而不必只依赖这个评级。
+    </p>
+
+    <h2>主题标签怎么打</h2>
+    <p>
+      标签是从标题、描述、摘要与动机里做关键词匹配得到的，覆盖账户抽象、交易格式、费用市场、质押与共识、扩容与 L2、
+      密码学与签名、P2P 网络、钱包与密钥、代币标准、DeFi、隐私、跨链、合约接口、安全、治理、比特币脚本、地址格式等 17 类。
+      匹配是透明的规则式判断，可能不完全准确，用于快速聚类而非权威分类。
+    </p>
+
+    <h2>版权与免责</h2>
+    <p>
+      EIP/ERC 文档采用 CC0 1.0；BIP 文档采用各自在文件头声明的许可证（常见为 BSD-2-Clause、BSD-3-Clause、CC0）。
+      本站仅做索引、翻译与展示，原文版权归各提案作者所有。本站为非官方项目，与 Ethereum Foundation、Bitcoin Core 无隶属关系。
+    </p>
+
+    <div class="about-cta">
+      <a class="primary-btn" href="index.html">浏览全部提案</a>
+      <a class="primary-btn" href="https://github.com/ethereum/EIPs" target="_blank" rel="noopener">ethereum/EIPs ↗</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>链上提案库</strong>
+        <p>非官方中文索引。提案原文版权归各作者所有，EIP/ERC 采用 CC0，BIP 采用各自声明许可证。</p>
+        <p class="muted">机器翻译仅供阅读理解，技术细节以英文原文为准。</p>
+      </div>
+      <div class="footer-meta">
+        <p>数据源</p>
+        <a href="https://github.com/ethereum/EIPs" target="_blank" rel="noopener">ethereum/EIPs ↗</a>
+        <a href="https://github.com/ethereum/ERCs" target="_blank" rel="noopener">ethereum/ERCs ↗</a>
+        <a href="https://github.com/bitcoin/bips" target="_blank" rel="noopener">bitcoin/bips ↗</a>
+      </div>
+      <div class="footer-meta">
+        <p>更新信息</p>
+        <span id="updatedAt">—</span>
+        <a href="index.html">返回首页 ↗</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const key = "proposal-theme";
+      let stored = null;
+      try { stored = localStorage.getItem(key); } catch (_) {}
+      if (stored === "light" || stored === "dark") document.documentElement.dataset.theme = stored;
+      document.getElementById("themeToggle").addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem(key, next); } catch (_) {}
+      });
+      document.getElementById("search").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          const q = event.target.value.trim();
+          location.href = q ? `index.html?q=${encodeURIComponent(q)}` : "index.html";
+        }
+      });
+      fetch("data/stats.json", { cache: "no-cache" })
+        .then((r) => r.json())
+        .then((stats) => {
+          if (stats.generatedAt) {
+            document.getElementById("updatedAt").textContent =
+              `数据生成于 ${new Date(stats.generatedAt).toLocaleString("zh-CN", { hour12: false })}`;
+          }
+        })
+        .catch(() => {});
+    })();
+  </script>
+</body>
+</html>

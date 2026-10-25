@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>提案详情 · 链上提案库</title>
+  <meta name="description" content="EIP/ERC/BIP 提案中文详情：摘要、动机、技术规范要点、影响评估与依赖关系。" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#detail">跳到主要内容</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html" aria-label="链上提案库首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="26" height="26"><path d="M16 2 5 17l11 6 11-6L16 2Z" fill="currentColor" opacity=".9"/><path d="M5 19.2 16 26l11-6.8L16 30 5 19.2Z" fill="currentColor" opacity=".55"/></svg>
+        </span>
+        <span class="brand-text">
+          <strong>链上提案库</strong>
+          <small>EIP · ERC · BIP</small>
+        </span>
+      </a>
+      <div class="topbar-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm0-2a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Zm9.6 5.1-4.3-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="search" type="search" placeholder="搜索提案编号或关键词" autocomplete="off" spellcheck="false" aria-label="搜索提案" />
+        <kbd>/</kbd>
+      </div>
+      <nav class="topbar-actions">
+        <a class="ghost-btn" href="index.html">返回列表</a>
+        <a class="ghost-btn" href="about.html">关于</a>
+        <button id="themeToggle" class="icon-btn" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.3A8.2 8.2 0 0 1 9.7 4a8.3 8.3 0 1 0 10.3 10.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="detail">
+    <div class="detail-loading" id="loading">正在载入提案…</div>
+    <div class="detail-wrap" id="detailWrap" hidden>
+      <article>
+        <nav class="breadcrumb" aria-label="面包屑">
+          <a href="index.html">全部提案</a>
+          <span class="sep">/</span>
+          <a id="crumbFamily" href="index.html">EIP</a>
+          <span class="sep">/</span>
+          <span id="crumbId">—</span>
+        </nav>
+
+        <header class="detail-head">
+          <span class="id-badge" id="detailId">—</span>
+          <h1 class="detail-title" id="detailTitle">—</h1>
+          <p class="detail-title-en" id="detailTitleEn"></p>
+          <div class="detail-badges" id="detailBadges"></div>
+        </header>
+
+        <div class="impact-callout" id="impactCallout">
+          <div class="ic-head">
+            <span>影响面评估</span>
+            <span class="ic-level" id="impactLevel">—</span>
+          </div>
+          <p id="impactText"></p>
+        </div>
+
+        <nav class="section-jump" id="sectionJump" aria-label="章节跳转"></nav>
+
+        <div id="sections"></div>
+
+        <section class="doc-section" id="relatedSection" hidden>
+          <div class="doc-section-head"><h2>相关提案 <small>按主题聚类</small></h2></div>
+          <div class="related-grid" id="relatedGrid"></div>
+        </section>
+      </article>
+
+      <aside class="detail-aside">
+        <div class="aside-card">
+          <h3>提案元信息</h3>
+          <dl class="kv" id="metaList"></dl>
+        </div>
+        <div class="aside-card" id="authorCard">
+          <h3>作者</h3>
+          <div class="people" id="authorList"></div>
+        </div>
+        <div class="aside-card" id="requiresCard" hidden>
+          <h3>依赖的前置提案</h3>
+          <div class="requires-list" id="requiresList"></div>
+        </div>
+        <div class="aside-card" id="tagCard" hidden>
+          <h3>主题标签</h3>
+          <div class="chip-row" id="tagList"></div>
+        </div>
+        <a class="src-link" id="sourceLink" href="#" target="_blank" rel="noopener">
+          <span>查看官方原文</span><span aria-hidden="true">↗</span>
+        </a>
+        <a class="src-link" id="discussionLink" href="#" target="_blank" rel="noopener" hidden>
+          <span>讨论帖</span><span aria-hidden="true">↗</span>
+        </a>
+        <a class="src-link" href="index.html">← 返回全部提案</a>
+      </aside>
+    </div>
+    <div class="empty-state" id="notFound" hidden>
+      <div class="empty-icon">∅</div>
+      <h3>找不到这个提案</h3>
+      <p>编号可能有误，或该提案尚未被收录。</p>
+      <a class="primary-btn" href="index.html">返回列表</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>链上提案库</strong>
+        <p>非官方中文索引。提案原文版权归各作者所有，EIP/ERC 采用 CC0，BIP 采用各自声明许可证。</p>
+        <p class="muted">机器翻译仅供阅读理解，技术细节以英文原文为准。</p>
+      </div>
+      <div class="footer-meta">
+        <p>数据源</p>
+        <a href="https://github.com/ethereum/EIPs" target="_blank" rel="noopener">ethereum/EIPs ↗</a>
+        <a href="https://github.com/ethereum/ERCs" target="_blank" rel="noopener">ethereum/ERCs ↗</a>
+        <a href="https://github.com/bitcoin/bips" target="_blank" rel="noopener">bitcoin/bips ↗</a>
+      </div>
+      <div class="footer-meta">
+        <p>更新信息</p>
+        <span id="updatedAt">—</span>
+        <a href="about.html">数据与方法说明 ↗</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/detail.js"></script>
+</body>
+</html>
