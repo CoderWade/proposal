@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import re
 import shutil
 import sys
 import time
@@ -59,6 +61,40 @@ def compact(item: dict) -> dict:
         "requiredByCount": item.get("requiredByCount", 0),
         "zhAvailable": item.get("zhAvailable", False),
     }
+
+
+def stamp_assets() -> int:
+    """Append a content hash to local asset URLs.
+
+    GitHub Pages serves everything with a 10-minute cache. Without a
+    fingerprint a returning visitor can pair freshly deployed HTML with a
+    cached older script, which breaks the page. The hash changes whenever the
+    file changes, so each deploy gets a clean URL.
+    """
+    assets = {}
+    for path in sorted((SITE_DIR / "assets").iterdir()):
+        if path.is_file():
+            digest = hashlib.sha1(path.read_bytes()).hexdigest()[:8]
+            assets[path.name] = digest
+
+    pattern = re.compile(r'(assets/([A-Za-z0-9_.-]+))(\?v=[0-9a-f]+)?')
+
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(2)
+        digest = assets.get(name)
+        return f"{match.group(1)}?v={digest}" if digest else match.group(0)
+
+    stamped = 0
+    for page in ("index.html", "detail.html", "about.html", "404.html"):
+        path = SITE_DIR / page
+        if not path.is_file():
+            continue
+        original = path.read_text(encoding="utf-8")
+        updated = pattern.sub(replace, original)
+        if updated != original:
+            path.write_text(updated, encoding="utf-8")
+            stamped += 1
+    return stamped
 
 
 def main() -> int:
@@ -166,9 +202,11 @@ def main() -> int:
         json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
+    stamped = stamp_assets()
+
     print(
         f"[build] index={len(index)} details={len(list(DETAIL_DIR.glob('*.json')))} "
-        f"translated={stats['translated']}/{len(proposals)}",
+        f"translated={stats['translated']}/{len(proposals)} stamped_pages={stamped}",
         flush=True,
     )
     return 0
