@@ -54,6 +54,7 @@ def compact(item: dict) -> dict:
         "year": item.get("year"),
         "tags": item.get("tags", []),
         "impactLevel": item.get("impactLevel", ""),
+        "impactReasons": item.get("impactReasons", ""),
         "requires": [link["number"] for link in item.get("requiresLinks", [])],
         "requiredByCount": item.get("requiredByCount", 0),
         "zhAvailable": item.get("zhAvailable", False),

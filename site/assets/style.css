@@ -57,6 +57,45 @@
 
 * { box-sizing: border-box; }
 
+/* Themed scrollbars instead of the OS default */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* Custom tooltip (replacements for native `title` bubbles) */
+.ui-tip {
+  position: fixed;
+  z-index: 400;
+  max-width: 260px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+}
+.ui-tip.is-visible { opacity: 1; transform: translateY(0); }
+
 html { scroll-behavior: smooth; }
 
 body {
@@ -163,7 +202,7 @@ button { cursor: pointer; }
 
 #search {
   width: 100%;
-  padding: 10px 46px 10px 40px;
+  padding: 10px 40px 10px 40px;
   border-radius: 11px;
   border: 1px solid var(--border);
   background: var(--panel);
@@ -177,7 +216,29 @@ button { cursor: pointer; }
   box-shadow: 0 0 0 3px var(--accent-soft);
   background: var(--bg-elev);
 }
-#search::-webkit-search-cancel-button { filter: grayscale(1); opacity: 0.6; }
+
+.search-clear {
+  position: absolute;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.search-clear:hover {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+.search-clear[hidden] { display: none; }
+.topbar-search.has-value kbd { display: none; }
 
 .topbar-search kbd {
   position: absolute;
@@ -439,23 +500,103 @@ button { cursor: pointer; }
 }
 .seg.active span { color: var(--accent); }
 
-select {
+/* --------------------------------------------------------------------------
+   Custom select (listbox) — replaces the native <select> popup
+   -------------------------------------------------------------------------- */
+
+.select { position: relative; }
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 11px;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--panel-2);
   color: var(--text-dim);
   font-size: 13.5px;
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
 }
-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.select-trigger:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.select-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.select.is-open .select-trigger {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  background: var(--bg-elev);
+}
+.select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-caret {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.18s, color 0.18s;
+}
+.select.is-open .select-caret {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.select-menu {
+  position: fixed;
+  z-index: 300;
+  max-height: min(320px, calc(100vh - 24px));
+  padding: 5px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--bg-elev);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.24);
+  animation: selectIn 0.13s ease-out;
+}
+.select-menu[hidden] { display: none; }
+@keyframes selectIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.select-menu.opens-up { animation-name: selectInUp; }
+@keyframes selectInUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, color 0.12s;
+}
+.select-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-option.is-active { background: var(--panel-2); color: var(--text); }
+.select-option.is-selected { color: var(--accent); font-weight: 500; }
+.select-check {
+  flex: 0 0 auto;
+  color: var(--accent);
+  opacity: 0;
+}
+.select-option.is-selected .select-check { opacity: 1; }
 
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
@@ -520,7 +661,8 @@ select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px
 .active-filters { margin-left: 8px; color: var(--faint); font-size: 12.5px; }
 
 .sort-control { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
-.sort-control select { width: auto; min-width: 120px; padding: 6px 32px 6px 10px; }
+.sort-control .select { min-width: 128px; }
+.sort-control .select-trigger { padding: 6px 9px 6px 11px; }
 
 .card-grid {
   display: grid;
@@ -1015,7 +1157,7 @@ select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px
 .src-link:hover { border-color: var(--accent); color: var(--accent); }
 
 .requires-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.requires-list a {
+.requires-item {
   padding: 2px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1024,7 +1166,7 @@ select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px
   color: var(--muted);
   transition: all 0.14s;
 }
-.requires-list a:hover { border-color: var(--accent); color: var(--accent); }
+.requires-item:hover { border-color: var(--accent); color: var(--accent); }
 
 .related-grid {
   display: grid;

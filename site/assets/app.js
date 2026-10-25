@@ -1,6 +1,14 @@
-/* 链上提案库 — index page */
+/* 链上提案库 — index page
+ *
+ * All interactive chrome comes from assets/ui.js (custom listbox, search
+ * clear button, tooltips). No native <select>, native search decoration or
+ * `title` bubbles are used anywhere on this page.
+ */
 (() => {
   "use strict";
+
+  const UI = window.UI;
+  const esc = UI.esc;
 
   const state = {
     all: [],
@@ -21,16 +29,16 @@
   const IMPACT_RANK = { 高: 3, 中: 2, 低: 1 };
   const PAGE_SIZE = 60;
 
+  const SORT_OPTIONS = [
+    { value: "number-asc", label: "编号升序" },
+    { value: "number-desc", label: "编号降序" },
+    { value: "newest", label: "最新创建" },
+    { value: "impact", label: "影响面优先" },
+    { value: "refs", label: "被引用最多" },
+  ];
+
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-  const esc = (value) =>
-    String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
 
   const debounce = (fn, wait) => {
     let timer;
@@ -43,7 +51,7 @@
   function statusClass(status) {
     const s = String(status || "").toLowerCase().replace(/\s+/g, "");
     if (["final", "deployed", "complete", "living", "active"].includes(s)) return "st-" + s;
-    if (["lastcall"].includes(s)) return "st-lastcall";
+    if (s === "lastcall") return "st-lastcall";
     if (["draft", "review", "proposed"].includes(s)) return "st-" + s;
     if (["stagnant", "closed", "obsolete"].includes(s)) return "st-" + s;
     if (["withdrawn", "rejected"].includes(s)) return "st-" + s;
@@ -127,9 +135,13 @@
     const color = FAMILY_COLOR[item.family] || "var(--accent)";
     const title = item.titleZh || item.title;
     const desc = item.descriptionZh || item.description || item.abstractZh || "";
-    const tags = (item.tags || []).slice(0, 3)
+    const tags = (item.tags || [])
+      .slice(0, 3)
       .map((tag) => `<span class="tag">${esc(tag)}</span>`)
       .join("");
+    const refs = item.requiredByCount
+      ? `<span class="refs" data-tip="该提案被 ${item.requiredByCount} 个其他提案引用">↗ ${item.requiredByCount}</span>`
+      : "";
     return `
       <a class="card" href="detail.html?id=${encodeURIComponent(item.id)}" style="--family-color:${color}">
         <div class="card-top">
@@ -142,8 +154,10 @@
         <div class="card-tags">${tags}</div>
         <div class="card-foot">
           <div class="foot-left">
-            <span class="impact impact-${esc(item.impactLevel)}"><i class="dot"></i>影响 ${esc(item.impactLevel)}</span>
-            ${item.requiredByCount ? `<span class="refs">↗ ${item.requiredByCount} 次引用</span>` : ""}
+            <span class="impact impact-${esc(item.impactLevel)}" data-tip="${esc(
+      item.impactReasons || "影响面启发式评估"
+    )}"><i class="dot"></i>影响 ${esc(item.impactLevel)}</span>
+            ${refs}
           </div>
           <span class="year">${item.year || "—"}</span>
         </div>
@@ -171,44 +185,44 @@
     $("#activeFilters").textContent = parts.length ? "· " + parts.join(" · ") : "";
   }
 
+  // ------------------------------------------------------------------
+  // Selects
+  // ------------------------------------------------------------------
+
+  let statusSelect = null;
+  let typeSelect = null;
+  let sortSelect = null;
+
+  function countBy(arr, field) {
+    const map = new Map();
+    arr.forEach((item) => {
+      const value = item[field] || "未知";
+      map.set(value, (map.get(value) || 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }
+
   function buildFilterOptions() {
     const familyScope =
       state.family === "all" ? state.all : state.all.filter((i) => i.family === state.family);
-    const countBy = (arr, field) => {
-      const map = new Map();
-      arr.forEach((item) => {
-        const value = item[field] || "未知";
-        map.set(value, (map.get(value) || 0) + 1);
-      });
-      return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-    };
 
-    const statusSelect = $("#statusFilter");
     const statuses = countBy(familyScope, "statusZh");
-    statusSelect.innerHTML =
-      `<option value="">全部状态（${familyScope.length}）</option>` +
-      statuses
-        .map(([name, count]) => `<option value="${esc(name)}">${esc(name)}（${count}）</option>`)
-        .join("");
-    statusSelect.value = state.status;
-    if (statusSelect.value !== state.status) {
-      state.status = "";
-      statusSelect.value = "";
-    }
+    // The app state is the source of truth: push it into the control before the
+    // option labels are rebuilt, otherwise a stale control value would leak back.
+    statusSelect.setValue(state.status);
+    statusSelect.setOptions([
+      { value: "", label: `全部状态（${familyScope.length}）` },
+      ...statuses.map(([name, count]) => ({ value: name, label: `${name}（${count}）` })),
+    ]);
+    state.status = statusSelect.value;
 
-    const typeSelect = $("#typeFilter");
     const types = countBy(familyScope, "typeZh");
-    typeSelect.innerHTML =
-      `<option value="">全部类型</option>` +
-      types
-        .map(([name, count]) => `<option value="${esc(name)}">${esc(name)}（${count}）</option>`)
-        .join("");
-    typeSelect.value = state.type;
-    if (typeSelect.value !== state.type) {
-      state.type = "";
-      typeSelect.value = "";
-    }
-
+    typeSelect.setValue(state.type);
+    typeSelect.setOptions([
+      { value: "", label: "全部类型" },
+      ...types.map(([name, count]) => ({ value: name, label: `${name}（${count}）` })),
+    ]);
+    state.type = typeSelect.value;
     const tagCounts = new Map();
     familyScope.forEach((item) =>
       (item.tags || []).forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1))
@@ -219,20 +233,17 @@
     $("#tagFilter").innerHTML = topTags
       .map(
         ([tag, count]) =>
-          `<button class="chip ${state.tag === tag ? "active" : ""}" data-tag="${esc(tag)}" type="button">${esc(tag)}<span class="n">${count}</span></button>`
+          `<button class="chip ${state.tag === tag ? "active" : ""}" data-tag="${esc(tag)}" type="button" data-tip="${count} 个提案">${esc(
+            tag
+          )}<span class="n">${count}</span></button>`
       )
       .join("");
 
     $$("#impactFilter .chip").forEach((chip) => {
       chip.classList.toggle("active", state.impact === chip.dataset.impact);
-      const count = state.all.filter(
-        (i) =>
-          i.impactLevel === chip.dataset.impact &&
-          (state.family === "all" || i.family === state.family)
-      ).length;
-      const label = chip.dataset.impact;
-      chip.innerHTML = `${label}<span class="n">${count}</span>`;
-      chip.title = `${count} 个提案`;
+      const count = familyScope.filter((i) => i.impactLevel === chip.dataset.impact).length;
+      chip.innerHTML = `${esc(chip.dataset.impact)}<span class="n">${count}</span>`;
+      chip.dataset.tip = `${count} 个提案`;
     });
 
     $$("#familyFilter .seg").forEach((seg) => {
@@ -244,18 +255,23 @@
       seg.classList.toggle("active", state.family === family);
     });
 
-    // Keep every active filter visible in the tag cloud.
     if (state.tag) {
       const cloud = $("#tagFilter");
       const exists = $$(".chip", cloud).some((chip) => chip.dataset.tag === state.tag);
       if (!exists) {
         cloud.insertAdjacentHTML(
           "afterbegin",
-          `<button class="chip active" data-tag="${esc(state.tag)}" type="button">${esc(state.tag)}</button>`
+          `<button class="chip active" data-tag="${esc(state.tag)}" type="button">${esc(
+            state.tag
+          )}</button>`
         );
       }
     }
   }
+
+  // ------------------------------------------------------------------
+  // Stats / charts
+  // ------------------------------------------------------------------
 
   function renderStats(stats) {
     const counts = stats.counts || {};
@@ -277,8 +293,10 @@
       el.innerHTML = top
         .map(
           (row) => `
-          <button class="bar-row" type="button" data-field="${field}" data-value="${esc(row.name)}">
-            <span class="bar-name" title="${esc(row.name)}">${esc(row.name)}</span>
+          <button class="bar-row" type="button" data-field="${field}" data-value="${esc(
+            row.name
+          )}" data-tip="点击按「${esc(row.name)}」筛选">
+            <span class="bar-name">${esc(row.name)}</span>
             <span class="bar-track"><span class="bar-fill" style="width:${(row.count / max) * 100}%"></span></span>
             <span class="bar-value">${row.count}</span>
           </button>`
@@ -296,7 +314,9 @@
       $("#yearChart").innerHTML = years
         .map(
           (y) => `
-          <button class="year-bar" type="button" data-year="${y.year}" title="${y.year} 年：${y.count} 个提案">
+          <button class="year-bar" type="button" data-year="${y.year}" data-tip="${
+            y.year
+          } 年：${y.count} 个提案">
             <i style="height:${Math.max(3, (y.count / max) * 100)}%"></i>
             <span>${String(y.year).slice(2)}</span>
           </button>`
@@ -360,8 +380,7 @@
     state.sort = params.get("sort") || "number-asc";
     const search = $("#search");
     if (search) search.value = state.q;
-    const sort = $("#sortSelect");
-    if (sort) sort.value = state.sort;
+    if (search) search.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function resetFilters() {
@@ -374,12 +393,18 @@
     state.year = "";
     state.sort = "number-asc";
     $("#search").value = "";
-    $("#sortSelect").value = "number-asc";
+    $("#search").dispatchEvent(new Event("input", { bubbles: true }));
+    sortSelect.setValue("number-asc");
     buildFilterOptions();
     applyFilters();
   }
 
   function bindEvents() {
+    UI.initSearchBox($(".topbar-search"), () => {
+      state.q = "";
+      applyFilters();
+    });
+
     $("#search").addEventListener(
       "input",
       debounce((event) => {
@@ -399,18 +424,6 @@
       applyFilters();
     });
 
-    $("#statusFilter").addEventListener("change", (event) => {
-      state.status = event.target.value;
-      buildFilterOptions();
-      applyFilters();
-    });
-
-    $("#typeFilter").addEventListener("change", (event) => {
-      state.type = event.target.value;
-      buildFilterOptions();
-      applyFilters();
-    });
-
     $("#impactFilter").addEventListener("click", (event) => {
       const chip = event.target.closest(".chip");
       if (!chip) return;
@@ -424,11 +437,6 @@
       if (!chip) return;
       state.tag = state.tag === chip.dataset.tag ? "" : chip.dataset.tag;
       buildFilterOptions();
-      applyFilters();
-    });
-
-    $("#sortSelect").addEventListener("change", (event) => {
-      state.sort = event.target.value;
       applyFilters();
     });
 
@@ -472,25 +480,6 @@
         $("#search").blur();
       }
     });
-
-    const themeToggle = $("#themeToggle");
-    themeToggle.addEventListener("click", () => {
-      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem("proposal-theme", next);
-      } catch (_) {}
-    });
-  }
-
-  function initTheme() {
-    let stored = null;
-    try {
-      stored = localStorage.getItem("proposal-theme");
-    } catch (_) {}
-    if (stored === "light" || stored === "dark") {
-      document.documentElement.dataset.theme = stored;
-    }
   }
 
   async function loadJSON(path, fallback) {
@@ -505,9 +494,35 @@
   }
 
   async function init() {
-    initTheme();
-    bindEvents();
+    UI.initTheme();
+    UI.initTooltips();
+    UI.bindThemeToggle($("#themeToggle"));
     readURL();
+
+    statusSelect = UI.createSelect($("#statusSelect"), {
+      onChange: (value) => {
+        state.status = value;
+        buildFilterOptions();
+        applyFilters();
+      },
+    });
+    typeSelect = UI.createSelect($("#typeSelect"), {
+      onChange: (value) => {
+        state.type = value;
+        buildFilterOptions();
+        applyFilters();
+      },
+    });
+    sortSelect = UI.createSelect($("#sortSelect"), {
+      value: state.sort,
+      onChange: (value) => {
+        state.sort = value;
+        applyFilters();
+      },
+    });
+    sortSelect.setOptions(SORT_OPTIONS);
+
+    bindEvents();
 
     const [index, stats, featured] = await Promise.all([
       loadJSON("data/index.json", []),

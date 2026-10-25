@@ -13,15 +13,10 @@
   const FAMILY_COLOR = { EIP: "var(--eth)", ERC: "var(--erc)", BIP: "var(--btc)" };
   const IMPACT_COLOR = { 高: "var(--red)", 中: "var(--amber)", 低: "var(--muted)" };
   const LANG_KEY = "proposal-detail-lang";
+  const UI = window.UI;
 
   const $ = (sel) => document.querySelector(sel);
-  const esc = (value) =>
-    String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+  const esc = UI.esc;
 
   function statusClass(status) {
     const s = String(status || "").toLowerCase().replace(/\s+/g, "");
@@ -31,14 +26,6 @@
     if (["stagnant", "closed", "obsolete"].includes(s)) return "st-" + s;
     if (["withdrawn", "rejected"].includes(s)) return "st-" + s;
     return "st-stagnant";
-  }
-
-  function initTheme() {
-    let stored = null;
-    try {
-      stored = localStorage.getItem("proposal-theme");
-    } catch (_) {}
-    if (stored === "light" || stored === "dark") document.documentElement.dataset.theme = stored;
   }
 
   function lang() {
@@ -166,7 +153,7 @@
     $("#requiresList").innerHTML = requires
       .map(
         (req) =>
-          `<a href="detail.html?id=${encodeURIComponent(req.id)}" title="${esc(
+          `<a class="requires-item" href="detail.html?id=${encodeURIComponent(req.id)}" data-tip="${esc(
             req.titleZh || req.title
           )}">${esc(req.id)}</a>`
       )
@@ -230,13 +217,9 @@
   }
 
   function bindChrome() {
-    $("#themeToggle").addEventListener("click", () => {
-      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem("proposal-theme", next);
-      } catch (_) {}
-    });
+    UI.bindThemeToggle($("#themeToggle"));
+    UI.initTooltips();
+    UI.initSearchBox($(".topbar-search"), () => {});
 
     $("#search").addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
@@ -254,7 +237,7 @@
   }
 
   async function init() {
-    initTheme();
+    UI.initTheme();
     bindChrome();
     loadMeta();
 

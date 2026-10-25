@@ -12,7 +12,12 @@ SITE = ROOT / "site"
 DATA = SITE / "data"
 
 REQUIRED_PAGES = ["index.html", "detail.html", "about.html"]
-REQUIRED_ASSETS = ["assets/style.css", "assets/app.js", "assets/detail.js"]
+REQUIRED_ASSETS = [
+    "assets/style.css",
+    "assets/ui.js",
+    "assets/app.js",
+    "assets/detail.js",
+]
 
 
 def fail(message: str) -> None:

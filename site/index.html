@@ -35,14 +35,14 @@
 
       <div class="topbar-search">
         <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm0-2a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Zm9.6 5.1-4.3-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="search" type="search" placeholder="搜索编号、标题或关键词，例如 7702、账户抽象、Taproot" autocomplete="off" spellcheck="false" aria-label="搜索提案" />
+        <input id="search" type="text" role="searchbox" placeholder="搜索编号、标题或关键词，例如 7702、账户抽象、Taproot" autocomplete="off" spellcheck="false" aria-label="搜索提案" />
         <kbd>/</kbd>
       </div>
 
       <nav class="topbar-actions">
         <a class="ghost-btn" href="#overview">数据概览</a>
         <a class="ghost-btn" href="about.html">关于</a>
-        <button id="themeToggle" class="icon-btn" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+        <button id="themeToggle" class="icon-btn" type="button" aria-label="切换明暗主题" data-tip="切换明暗主题">
           <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
           <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.3A8.2 8.2 0 0 1 9.7 4a8.3 8.3 0 1 0 10.3 10.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         </button>
@@ -92,12 +92,20 @@
 
         <div class="filter-block">
           <h3>状态</h3>
-          <select id="statusFilter" aria-label="按状态筛选"><option value="">全部状态</option></select>
+          <div class="select" id="statusSelect">
+            <button class="select-trigger" type="button">
+              <span class="select-value">全部状态</span>
+            </button>
+          </div>
         </div>
 
         <div class="filter-block">
           <h3>类型 / 层</h3>
-          <select id="typeFilter" aria-label="按类型筛选"><option value="">全部类型</option></select>
+          <div class="select" id="typeSelect">
+            <button class="select-trigger" type="button">
+              <span class="select-value">全部类型</span>
+            </button>
+          </div>
         </div>
 
         <div class="filter-block">
@@ -123,16 +131,14 @@
             <strong id="resultCount">—</strong> 个提案
             <span id="activeFilters" class="active-filters"></span>
           </div>
-          <label class="sort-control">
-            排序
-            <select id="sortSelect" aria-label="排序方式">
-              <option value="number-asc">编号升序</option>
-              <option value="number-desc">编号降序</option>
-              <option value="newest">最新创建</option>
-              <option value="impact">影响面优先</option>
-              <option value="refs">被引用最多</option>
-            </select>
-          </label>
+          <div class="sort-control">
+            <span class="sort-label">排序</span>
+            <div class="select" id="sortSelect">
+              <button class="select-trigger" type="button">
+                <span class="select-value">编号升序</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div id="cardGrid" class="card-grid" aria-live="polite"></div>
@@ -195,6 +201,7 @@
     </div>
   </footer>
 
+  <script src="assets/ui.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>

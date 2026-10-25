@@ -8,6 +8,8 @@
 - `site/detail.html` — 单个提案的中英对照详情、依赖关系、影响面评估
 - `site/about.html` — 数据来源与方法论说明
 
+界面控件全部自绘，不使用浏览器原生组件：下拉筛选是 ARIA combobox + listbox（支持方向键、Home/End、Enter、Esc、首字母跳转、贴底自动向上翻转），搜索框有自定义清除按钮，提示气泡替换了原生 `title`，滚动条也按主题配色。统一样式与交互都集中在 `site/assets/ui.js`。
+
 ## 数据源
 
 | 家族 | 仓库 | 文件 |
@@ -102,7 +104,7 @@ scripts/
   pipeline.py      # 串联以上步骤
 site/
   index.html detail.html about.html
-  assets/style.css app.js detail.js favicon.svg
+  assets/style.css ui.js app.js detail.js favicon.svg
   data/            # 构建产物（index / stats / featured / detail/*.json）
 .github/workflows/
   deploy.yml       # 每 6 小时同步 + 发布 Pages
