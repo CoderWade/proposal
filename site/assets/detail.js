@@ -141,6 +141,54 @@
     });
   }
 
+  // ------------------------------------------------------------------
+  // Return-to-list context
+  //
+  // Card links carry `?from=<list url>` and the list records the clicked card
+  // in sessionStorage, so leaving a proposal returns the visitor to the exact
+  // spot — same filters, same scroll offset, same card — instead of the top of
+  // a reset list.
+  // ------------------------------------------------------------------
+
+  const IS_INDEX = /\/index\.html$|\/$/;
+
+  function listUrlFrom(value) {
+    if (!value) return null;
+    try {
+      const url = new URL(value, location.origin);
+      if (url.origin !== location.origin || !IS_INDEX.test(url.pathname)) return null;
+      return url;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function resolveReturn(item) {
+    const from = listUrlFrom(new URLSearchParams(location.search).get("from"));
+    if (from && item) from.searchParams.set("focus", item.id);
+    return { url: from ? from.pathname + from.search : "index.html" };
+  }
+
+  function wireBackLinks(item) {
+    // Always navigate to an explicit URL that carries `?focus=<id>`. Relying on
+    // history.back() would depend on bfcache and on the list still holding the
+    // right in-memory state; an explicit URL works on refresh, in a new tab, and
+    // after the browser dropped the previous document.
+    const target = resolveReturn(item);
+    document.querySelectorAll("[data-back-list]").forEach((link) => {
+      link.setAttribute("href", target.url);
+    });
+  }
+
+  // Related and prerequisite links must forward the list context, otherwise a
+  // two-hop trip (list → proposal → related proposal) loses the way back.
+  function proposalHref(id) {
+    const params = new URLSearchParams({ id });
+    const from = new URLSearchParams(location.search).get("from");
+    if (from) params.set("from", from);
+    return `detail.html?${params.toString()}`;
+  }
+
   function renderAside(item) {
     const authors = item.authors || [];
     $("#authorCard").hidden = !authors.length;
@@ -153,7 +201,7 @@
     $("#requiresList").innerHTML = requires
       .map(
         (req) =>
-          `<a class="requires-item" href="detail.html?id=${encodeURIComponent(req.id)}" data-tip="${esc(
+          `<a class="requires-item" href="${proposalHref(req.id)}" data-tip="${esc(
             req.titleZh || req.title
           )}">${esc(req.id)}</a>`
       )
@@ -187,7 +235,7 @@
     const rows = related
       .map(
         (rel) => `
-          <a class="related-item" href="detail.html?id=${encodeURIComponent(rel.id)}">
+          <a class="related-item" href="${proposalHref(rel.id)}">
             <div class="ri-id">${esc(rel.id)} · ${esc(rel.statusZh)}</div>
             <div class="ri-title">${esc(rel.titleZh || rel.title)}</div>
           </a>`
@@ -266,6 +314,7 @@
       renderSections(item);
       renderAside(item);
       renderRelated(item);
+      wireBackLinks(item);
 
       $("#loading").hidden = true;
       $("#detailWrap").hidden = false;

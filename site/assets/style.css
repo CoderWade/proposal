@@ -754,6 +754,23 @@ button { cursor: pointer; }
 }
 .card:hover::after { opacity: 0.9; }
 
+/* Flash the card the visitor just came back from, so the return position is
+   obvious rather than merely technically correct. */
+.card.is-returned {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+  box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow);
+  animation: returnPulse 2.2s ease-out;
+}
+@keyframes returnPulse {
+  0%, 55% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 42%, transparent), var(--shadow);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent, var(--shadow);
+  }
+}
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
 .id-badge {

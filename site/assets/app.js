@@ -127,8 +127,18 @@
       })
     );
     state.shown = PAGE_SIZE;
-    renderResults();
+    // Sync the URL first: card links embed the current list URL as their
+    // `from` context, so it has to be up to date before the cards are painted.
     syncURL();
+    renderResults();
+  }
+
+  function listContext() {
+    // `focus` is a return hint, not part of the list's own state.
+    const params = new URLSearchParams(location.search);
+    params.delete("focus");
+    const query = params.toString();
+    return `${location.pathname}${query ? `?${query}` : ""}`;
   }
 
   function cardHTML(item) {
@@ -142,8 +152,11 @@
     const refs = item.requiredByCount
       ? `<span class="refs" data-tip="该提案被 ${item.requiredByCount} 个其他提案引用">↗ ${item.requiredByCount}</span>`
       : "";
+    const href = `detail.html?id=${encodeURIComponent(item.id)}&from=${encodeURIComponent(
+      listContext()
+    )}`;
     return `
-      <a class="card" href="detail.html?id=${encodeURIComponent(item.id)}" style="--family-color:${color}">
+      <a class="card" data-id="${esc(item.id)}" href="${href}" style="--family-color:${color}">
         <div class="card-top">
           <span class="id-badge">${esc(item.id)}</span>
           <span class="status-pill ${statusClass(item.status)}">${esc(item.statusZh || item.status)}</span>
@@ -363,6 +376,9 @@
     if (state.tag) params.set("tag", state.tag);
     if (state.year) params.set("year", state.year);
     if (state.sort !== "number-asc") params.set("sort", state.sort);
+    // `focus` is a return anchor, not a filter; keep it so a reload or a
+    // filter change does not silently lose which card we came back to.
+    if (lastFocusId) params.set("focus", lastFocusId);
     const query = params.toString();
     const url = query ? `${location.pathname}?${query}` : location.pathname;
     history.replaceState(null, "", url);
@@ -397,6 +413,107 @@
     sortSelect.setValue("number-asc");
     buildFilterOptions();
     applyFilters();
+  }
+
+  // ------------------------------------------------------------------
+  // Scroll memory + return-to-card
+  //
+  // bfcache restores scroll for free on a plain history.back(), but a fresh
+  // load (new tab, hard refresh, expired bfcache) starts at the top. The list
+  // therefore remembers how many cards were expanded and where the visitor
+  // was, and a `?focus=<id>` link scrolls straight back to that proposal.
+  // ------------------------------------------------------------------
+
+  const SCROLL_KEY = "proposal-list-state";
+
+  // The card the visitor left from. Two things overwrite the stored value with
+  // an empty id if it only lives in sessionStorage: the `pagehide` that fires
+  // right after a card click, and the scroll event triggered by restoring the
+  // position on the next load. Keeping it in memory (and re-seeding it from
+  // storage on load) makes every later save carry the id forward.
+  let lastFocusId = "";
+
+  function saveListState(focusId) {
+    if (focusId) lastFocusId = focusId;
+    // A restored or refreshed list keeps the anchor in its own URL; fall back to
+    // it so a scroll-triggered save cannot erase which card we came from.
+    if (!lastFocusId) {
+      lastFocusId = new URLSearchParams(location.search).get("focus") || "";
+    }
+    try {
+      sessionStorage.setItem(
+        SCROLL_KEY,
+        JSON.stringify({
+          scrollY: Math.round(window.scrollY),
+          shown: state.shown,
+          url: location.search,
+          focus: lastFocusId,
+          at: Date.now(),
+        })
+      );
+    } catch (_) {}
+  }
+
+  function readListState() {
+    try {
+      const raw = sessionStorage.getItem(SCROLL_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Ignore stale state from an unrelated list session.
+      if (Date.now() - (parsed.at || 0) > 6 * 60 * 60 * 1000) return null;
+      return parsed;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function restoreScroll(saved) {
+    if (!saved || !saved.scrollY) return;
+    // Wait a frame so the restored cards are laid out before scrolling.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo({ top: saved.scrollY, behavior: "instant" }));
+    });
+  }
+
+  // Highlight only — used when bfcache has already restored the exact scroll
+  // offset, so scrolling again would fight the browser's own restoration.
+  function highlightCard(id) {
+    if (!id) return false;
+    const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    if (!card) return false;
+    card.classList.add("is-returned");
+    card.setAttribute("aria-current", "true");
+    setTimeout(() => card.classList.remove("is-returned"), 2200);
+    return true;
+  }
+
+  function focusCard(id) {
+    if (!id) return false;
+    const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    if (!card) return false;
+
+    highlightCard(id);
+
+    const top = card.getBoundingClientRect().top + window.scrollY - 90;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo({ top: Math.max(0, top), behavior: "instant" }));
+      card.focus({ preventScroll: true });
+    });
+    return true;
+  }
+
+  // Ensure a focused card is visible even if it sits past the first page.
+  function ensureCardRendered(id) {
+    if (!id) return;
+    const index = state.filtered.findIndex((item) => item.id === id);
+    if (index < 0) return;
+    if (index >= state.shown) {
+      state.shown = Math.min(
+        state.filtered.length,
+        Math.ceil((index + 1) / PAGE_SIZE) * PAGE_SIZE
+      );
+      renderResults();
+    }
   }
 
   function bindEvents() {
@@ -554,8 +671,71 @@
     if (stats) renderStats(stats);
     renderFeatured(featured);
     buildFilterOptions();
+
+    // A returning visitor gets the same number of cards they had expanded,
+    // then either the exact card they clicked (?focus=) or their scroll offset.
+    const params = new URLSearchParams(location.search);
+    const focusId = params.get("focus");
+    const saved = readListState();
+    if (saved?.focus) lastFocusId = saved.focus;
+
     applyFilters();
+
+    // applyFilters resets pagination, so re-expand afterwards when returning.
+    if (saved && !focusId && saved.shown > state.shown) {
+      state.shown = Math.min(state.filtered.length, saved.shown);
+      renderResults();
+    }
     if (!featuredRendered) $("#featuredSection").hidden = true;
+
+    if (focusId) {
+      ensureCardRendered(focusId);
+      if (focusCard(focusId)) {
+        // Keep the anchor in the URL so a refresh or a copied link still lands
+        // on this proposal.
+        try {
+          const keep = new URLSearchParams(location.search);
+          keep.set("focus", focusId);
+          history.replaceState(null, "", `${location.pathname}?${keep.toString()}`);
+        } catch (_) {}
+      } else {
+        restoreScroll(saved);
+      }
+    } else if (saved) {
+      restoreScroll(saved);
+      // The document may be restored by bfcache (init never re-runs) or rebuilt
+      // from scratch; highlight in both cases so the origin card is obvious.
+      highlightCard(saved.focus);
+    }
+
+    // Returning through the browser's back button hits bfcache: the document is
+    // restored as-is (scroll already correct) and init() never re-runs, so the
+    // highlight has to be applied here.
+    window.addEventListener("pageshow", (event) => {
+      if (!event.persisted) return;
+      const state2 = readListState();
+      if (state2?.focus) highlightCard(state2.focus);
+    });
+
+    // Keep the last position when leaving for a proposal, and on unload.
+    document.addEventListener(
+      "click",
+      (event) => {
+        const link = event.target.closest?.("a.card");
+        if (link) saveListState(link.dataset.id);
+      },
+      true
+    );
+    window.addEventListener("pagehide", () => saveListState());
+    let scrollTimer = 0;
+    window.addEventListener(
+      "scroll",
+      () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => saveListState(), 250);
+      },
+      { passive: true }
+    );
 
     UI.watchBuild(showUpdateBanner);
   }
